@@ -1,0 +1,144 @@
+services:
+
+  # ── Ghost (unchanged) ────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: ghost-mysql
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: "youshouldletmeein"
+      MYSQL_DATABASE: teknosoup
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: "iamaghost"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ghost_net
+
+  ghost:
+    image: ghost:5-alpine
+    container_name: ghost
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "2368:2368"
+    environment:
+      database__client: mysql
+      database__connection__host: mysql
+      database__connection__user: admin
+      database__connection__password: "iamaghost"
+      database__connection__database: teknosoup
+      url: https://www.teknosoup.com
+      server__host: 0.0.0.0
+      NODE_ENV: production
+    volumes:
+      - ghost_content:/var/lib/ghost/content
+    networks:
+      - ghost_net
+
+  # ── Strapi CMS ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: strapi-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: strapi
+      POSTGRES_USER: strapi
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ghost_net
+
+  strapi:
+    build:
+      context: ./strapi
+      dockerfile: Dockerfile
+    container_name: strapi
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "1337:1337"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 1337
+      NODE_ENV: production
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: strapi
+      DATABASE_USERNAME: strapi
+      DATABASE_PASSWORD: "${POSTGRES_PASSWORD}"
+      APP_KEYS: "${STRAPI_APP_KEYS}"
+      API_TOKEN_SALT: "${STRAPI_API_TOKEN_SALT}"
+      ADMIN_JWT_SECRET: "${STRAPI_ADMIN_JWT_SECRET}"
+      TRANSFER_TOKEN_SALT: "${STRAPI_TRANSFER_TOKEN_SALT}"
+      JWT_SECRET: "${STRAPI_JWT_SECRET}"
+      CLIENT_URL: "https://new.teknosoup.com"
+    volumes:
+      - strapi_uploads:/app/public/uploads
+    networks:
+      - ghost_net
+
+  # ── Next.js frontend ─────────────────────────────────────────────────────────
+  # During migration: accessible at https://new.teknosoup.com (staging)
+  # After cutover: reverse proxy points teknosoup.com here instead of Ghost
+  nextjs:
+    build:
+      context: ./next
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://cms.teknosoup.com"
+        IMAGE_HOSTNAME: "cms.teknosoup.com"
+    container_name: nextjs
+    restart: always
+    depends_on:
+      - strapi
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: "https://cms.teknosoup.com"
+      WEBSITE_URL: "https://new.teknosoup.com"
+      NODE_ENV: production
+    networks:
+      - ghost_net
+
+  # ── Ghost → Strapi migration (run once, not a permanent service) ─────────────
+  # Usage: docker compose run --rm migration
+  migration:
+    build:
+      context: ./scripts/ghost-migration
+      dockerfile: Dockerfile
+    container_name: ghost-migration
+    profiles:
+      - migration
+    depends_on:
+      - strapi
+    environment:
+      GHOST_DB_HOST: mysql
+      GHOST_DB_PORT: 3306
+      GHOST_DB_USER: admin
+      GHOST_DB_PASSWORD: "iamaghost"
+      GHOST_DB_NAME: teknosoup
+      GHOST_CONTENT_PATH: /ghost-content
+      STRAPI_API_URL: http://strapi:1337
+      STRAPI_API_TOKEN: "${STRAPI_API_TOKEN}"
+      DRY_RUN: "${DRY_RUN:-false}"
+      LIMIT: "${LIMIT:-}"
+    volumes:
+      - ghost_content:/ghost-content:ro  # read-only access to Ghost images
+    networks:
+      - ghost_net
+
+volumes:
+  mysql_data:
+  ghost_content:
+  postgres_data:
+  strapi_uploads:
+
+networks:
+  ghost_net:
+    driver: bridge
