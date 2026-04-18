@@ -6,7 +6,7 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat && corepack enable
 COPY package.json package-lock.json* yarn.lock* .yarnrc.yml* ./
 RUN \
-  if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
+  if [ -f yarn.lock ]; then yarn install --immutable; \
   elif [ -f package-lock.json ]; then npm ci; \
   else npm install; fi
 
