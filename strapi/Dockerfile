@@ -3,12 +3,8 @@ WORKDIR /app
 
 # ── Install dependencies ──────────────────────────────────────────────────────
 FROM base AS deps
-RUN corepack enable
-COPY package.json package-lock.json* yarn.lock* .yarnrc.yml* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn install --immutable; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  else npm install; fi
+COPY package.json ./
+RUN npm install
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 FROM base AS builder
