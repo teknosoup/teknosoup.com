@@ -2,6 +2,7 @@
   "name": "strapi",
   "private": true,
   "version": "0.1.0",
+  "packageManager": "yarn@4.5.0",
   "description": "A Strapi application",
   "scripts": {
     "develop": "strapi develop",
