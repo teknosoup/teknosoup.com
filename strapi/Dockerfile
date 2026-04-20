@@ -4,13 +4,14 @@ WORKDIR /app
 # ── Install dependencies ──────────────────────────────────────────────────────
 FROM base AS deps
 COPY package.json ./
+COPY scripts ./scripts
 RUN npm install
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
 # ── Production runner ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
