@@ -3,9 +3,10 @@ WORKDIR /app
 
 # ── Install dependencies ──────────────────────────────────────────────────────
 FROM base AS deps
-COPY package.json ./
+RUN corepack enable
+COPY package.json yarn.lock .yarnrc.yml* ./
 COPY scripts ./scripts
-RUN npm install
+RUN HUSKY=0 yarn install --immutable
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 FROM base AS builder
