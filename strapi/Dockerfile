@@ -4,7 +4,7 @@ WORKDIR /app
 # ── Install dependencies ──────────────────────────────────────────────────────
 FROM base AS deps
 RUN corepack enable
-COPY package.json yarn.lock .yarnrc.yml* ./
+COPY package.json yarn.lock .yarnrc.yml ./
 COPY scripts ./scripts
 RUN HUSKY=0 yarn install --immutable
 

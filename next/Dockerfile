@@ -4,7 +4,7 @@ WORKDIR /app
 # ── Install dependencies ──────────────────────────────────────────────────────
 FROM base AS deps
 RUN apk add --no-cache libc6-compat && corepack enable
-COPY package.json yarn.lock .yarnrc.yml* ./
+COPY package.json yarn.lock .yarnrc.yml ./
 RUN HUSKY=0 yarn install --immutable
 
 # ── Build ─────────────────────────────────────────────────────────────────────
