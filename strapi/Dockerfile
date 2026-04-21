@@ -23,10 +23,7 @@ ENV NODE_ENV=production
 # Copy built output and required files
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/config ./config
 COPY --from=builder /app/database ./database
 COPY --from=builder /app/package.json ./
 
