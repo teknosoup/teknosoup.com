@@ -1,43 +1,5 @@
 services:
 
-  # ── Ghost (unchanged) ────────────────────────────────────────────────────────
-  mysql:
-    image: mysql:8.0
-    container_name: ghost-mysql
-    restart: always
-    command: --default-authentication-plugin=mysql_native_password
-    environment:
-      MYSQL_ROOT_PASSWORD: "youshouldletmeein"
-      MYSQL_DATABASE: teknosoup
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: "iamaghost"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - ghost_net
-
-  ghost:
-    image: ghost:5-alpine
-    container_name: ghost
-    restart: always
-    depends_on:
-      - mysql
-    ports:
-      - "2368:2368"
-    environment:
-      database__client: mysql
-      database__connection__host: mysql
-      database__connection__user: admin
-      database__connection__password: "iamaghost"
-      database__connection__database: teknosoup
-      url: https://www.teknosoup.com
-      server__host: 0.0.0.0
-      NODE_ENV: production
-    volumes:
-      - ghost_content:/var/lib/ghost/content
-    networks:
-      - ghost_net
-
   # ── Strapi CMS ───────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
@@ -140,8 +102,6 @@ services:
       - ghost_net
 
 volumes:
-  mysql_data:
-  ghost_content:
   postgres_data:
   strapi_uploads:
 
